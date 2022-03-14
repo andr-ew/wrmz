@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <link href="/style.css" rel="stylesheet" />
+    </head>
+    <body>
+        <button id="record" type="button" onclick="record()">record</button>
+        <script src="https://unpkg.com/ccapture.js@1.1.0/build/CCapture.all.min.js"></script>
+        <script src="https://unpkg.com/@tweenjs/tween.js@18.6.4/dist/tween.umd.js"></script>
+        <script type="module">
+            import * as THREE from 'https://unpkg.com/three@0.137.5?module';
+            import { OrbitControls } from 'https://unpkg.com/three@0.137.5/examples/jsm/controls/OrbitControls.js?module';
+            import { loop } from './js/setup.js';
+            import { Wrm, loadmodel, makemodel, makecrv } from './js/wrms.js';
+            //import { Curves } from 'https://unpkg.com/three@0.137.5/examples/jsm/curves/CurveExtras.js?module';
+
+            loop(6, (scene, camera, renderer) => {
+                var orbit = new OrbitControls(camera, renderer.domElement);
+
+                var g = new THREE.Group();
+                scene.add(g);
+
+                makemodel('tea', b => {
+                    g.add(b);
+                });
+
+                camera.position.z = 300;
+
+                return t => {
+                    g.rotation.y = Math.PI * 2 * t;
+                    // g.rotation.x = Math.PI * 2 * t;
+                    // g.rotation.z = -Math.PI * 2 * t;
+                };
+            });
+        </script>
+    </body>
+</html>
