@@ -1,5 +1,4 @@
 import * as THREE from 'https://unpkg.com/three@0.137.5?module';
-import Stats from 'https://unpkg.com/three@0.137.5/examples/jsm/libs/stats.module.js?module';
 
 let start, capturer, recording, width, height;
 
@@ -43,25 +42,9 @@ function resize() {
 }
 window.addEventListener('resize', resize);
 
-function loop(
-    duration = 3,
-    init = () => {},
-    // { done = () => {}, width = 1920, height = 1080, framerate = 60 }
-    options = {}
-) {
-    width = options.width;
-    height = options.height;
-
-    //set up ccapture.js with webm video format
-    capturer = new CCapture({
-        framerate: options.framerate || 60,
-        format: 'webm',
-        timeLimit: duration, //record exactly one loop
-        display: true,
-    });
-
-    const stats = new Stats();
-    document.body.appendChild(stats.dom);
+function loop(duration = 3, init = () => {}, options = {}) {
+    width = options.width || 1920;
+    height = options.height || 1080;
 
     let update = init(scene, camera, renderer) ?? (() => {});
 
@@ -84,12 +67,18 @@ function loop(
 
         update(t, elapsed, firstFrame);
 
-        stats.update();
-
         renderer.render(scene, camera);
         if (capturer) capturer.capture(renderer.domElement);
     };
     animate();
+
+    //set up ccapture.js with webm video format
+    capturer = new CCapture({
+        framerate: options.framerate || 60,
+        format: 'webm',
+        timeLimit: duration, //record exactly one loop
+        display: true,
+    });
 
     if (options.done) options.done();
 }
