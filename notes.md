@@ -2,6 +2,7 @@
 
 - https://threejs.org/examples/#webgl_clipping
 - https://threejs.org/examples/#webgl_geometry_nurbs
+- https://threejs.org/examples/#webgl_geometry_extrude_splines
 - https://threejs.org/examples/#webgl_geometry_spline_editor
 - https://threejs.org/examples/#webgl_materials_video
 - https://threejs.org/examples/#webgl_modifier_curve
