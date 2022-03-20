@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <link href="/style.css" rel="stylesheet" />
+    </head>
+    <body>
+        <button id="record" type="button" onclick="record()">record</button>
+        <script src="https://unpkg.com/ccapture.js@1.1.0/build/CCapture.all.min.js"></script>
+        <script src="https://unpkg.com/@tweenjs/tween.js@18.6.4/dist/tween.umd.js"></script>
+        <script type="module">
+            import * as THREE from 'https://unpkg.com/three@0.137.5?module';
+            import { OrbitControls } from 'https://unpkg.com/three@0.137.5/examples/jsm/controls/OrbitControls.js?module';
+            import { loop } from './js/setup.js';
+            import {
+                Wrm,
+                loadmodel,
+                makemodel,
+                makecrv,
+                sky,
+                Seq2,
+            } from './js/wrms.js';
+            import { Curves } from 'https://unpkg.com/three@0.137.5/examples/jsm/curves/CurveExtras.js?module';
+
+            var w = window;
+
+            var imgload = new THREE.TextureLoader();
+            var frames = [
+                {
+                    radius: 199.02612938671862,
+                    phi: 1.4448176740193661,
+                    theta: -2.0156584444084906,
+                },
+                {
+                    radius: 199.0261293867183,
+                    phi: 1.625911987384189,
+                    theta: 2.3857207369366207,
+                },
+                {
+                    radius: 79.05602833972245,
+                    phi: 1.2952180238484228,
+                    theta: 1.5117438333063815,
+                },
+                {
+                    radius: 79.05602833972254,
+                    phi: 1.6731539821750128,
+                    theta: -1.858185128439063,
+                },
+                {
+                    radius: 107.54577672256207,
+                    phi: 1.5629226609964233,
+                    theta: -3.1022243245974273,
+                },
+                {
+                    radius: 107.54577672256208,
+                    phi: 0.18503114626405487,
+                    theta: 1.9054271232299216,
+                },
+                {
+                    radius: 209.50118882812345,
+                    phi: 1.1298710420805307,
+                    theta: -0.18896797916327324,
+                },
+                {
+                    radius: 209.50118882812353,
+                    phi: 1.1849867026698244,
+                    theta: 1.6298488202834498,
+                },
+                {
+                    radius: 209.50118882812353,
+                    phi: 2.775467193960897,
+                    theta: 1.7243328098650978,
+                },
+            ];
+
+            const dur = 40;
+
+            imgload.load(
+                'img/IMG_0618.jpeg',
+                // 'img/100_3995.JPG',
+                // 'img/Screen Shot 2019-09-04 at 4.25.54 PM.png',
+                // 'img/Screen Shot 2019-06-28 at 3.37.36 PM.png',
+                //'img/Screen Shot 2019-06-28 at 2.14.59 PM.png',
+                //'img/equirect.png',
+                tex => {
+                    loop(dur, (scene, camera, renderer) => {
+                        const pmremGenerator = new THREE.PMREMGenerator(
+                            renderer
+                        );
+                        var hdrCubeRenderTarget = pmremGenerator.fromEquirectangular(
+                            tex
+                        );
+                        tex.dispose();
+                        pmremGenerator.dispose();
+
+                        scene.background = hdrCubeRenderTarget.texture;
+
+                        //sky(tex);
+
+                        let tf = new Curves.TrefoilKnot(30);
+                        let kc = new Curves.KnotCurve(30);
+
+                        var wrm = new Wrm(
+                            'teapot3',
+                            makecrv(function (t, optionalTarget) {
+                                var point =
+                                    optionalTarget || new THREE.Vector3();
+
+                                t = 2 * Math.PI * t;
+
+                                var x =
+                                    -0.22 * Math.cos(t) -
+                                    1.28 * Math.sin(t) -
+                                    0.44 * Math.cos(3 * t) -
+                                    0.78 * Math.sin(3 * t);
+                                var y =
+                                    -0.1 * Math.cos(2 * t) -
+                                    0.27 * Math.sin(2 * t) +
+                                    0.38 * Math.cos(4 * t) +
+                                    0.46 * Math.sin(4 * t);
+                                var z =
+                                    0.7 * Math.cos(3 * t) -
+                                    0.4 * Math.sin(3 * t);
+
+                                return point.set(x, y, z).multiplyScalar(60);
+                            }),
+                            120
+                        );
+                        scene.add(wrm.group);
+
+                        var state = new THREE.Spherical().copy(frames[0]);
+                        var seq = new Seq2(
+                            frames,
+                            state,
+                            v => {
+                                camera.position.setFromSpherical(state);
+                                camera.lookAt(0, 0, 0);
+                            },
+                            () => {
+                                return 1;
+                            },
+                            () => {
+                                return 0.3 + Math.random() * 0.3;
+                            },
+                            TWEEN.Easing.Sinusoidal.InOut,
+                            // TWEEN.Easing.Circular.InOut
+                            dur / 2
+                        );
+
+                        camera.position.z = 300;
+
+                        return (t, elapsed, first) => {
+                            if (first) seq.start();
+
+                            wrm.update(t * 2);
+                            seq.update(elapsed);
+                        };
+                    });
+                }
+            );
+        </script>
+    </body>
+</html>

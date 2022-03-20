@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <link href="/style.css" rel="stylesheet" />
+    </head>
+    <body>
+        <button id="record" type="button" onclick="record()">record</button>
+        <script src="https://unpkg.com/ccapture.js@1.1.0/build/CCapture.all.min.js"></script>
+        <script src="https://unpkg.com/@tweenjs/tween.js@18.6.4/dist/tween.umd.js"></script>
+        <script type="module">
+            import * as THREE from 'https://unpkg.com/three@0.137.5?module';
+            import { OrbitControls } from 'https://unpkg.com/three@0.137.5/examples/jsm/controls/OrbitControls.js?module';
+            import { loop } from './js/setup.js';
+            import {
+                Wrm,
+                loadmodel,
+                makemodel,
+                makecrv,
+                sky,
+            } from './js/wrms.js';
+            import { Curves } from 'https://unpkg.com/three@0.137.5/examples/jsm/curves/CurveExtras.js?module';
+
+            var imgload = new THREE.TextureLoader();
+            imgload.load(
+                'img/Screen Shot 2021-02-14 at 5.33.48 PM.png',
+                // 'img/100_3995.JPG',
+                // 'img/Screen Shot 2019-09-04 at 4.25.54 PM.png',
+                // 'img/Screen Shot 2019-06-28 at 3.37.36 PM.png',
+                //'img/Screen Shot 2019-06-28 at 2.14.59 PM.png',
+                //'img/equirect.png',
+                tex => {
+                    loop(10, (scene, camera, renderer) => {
+                        const pmremGenerator = new THREE.PMREMGenerator(
+                            renderer
+                        );
+                        var hdrCubeRenderTarget = pmremGenerator.fromEquirectangular(
+                            tex
+                        );
+                        tex.dispose();
+                        pmremGenerator.dispose();
+
+                        scene.background = hdrCubeRenderTarget.texture;
+
+                        let tf = new Curves.TrefoilKnot(30);
+                        let kc = new Curves.KnotCurve(30);
+
+                        var parent = new THREE.Object3D();
+                        scene.add(parent);
+
+                        var wrm = new Wrm(
+                            'teapot3',
+                            makecrv(function (t, optionalTarget) {
+                                var point =
+                                    optionalTarget || new THREE.Vector3();
+
+                                t *= 2 * Math.PI;
+
+                                var R = 20;
+                                var s = 40;
+
+                                var sz = 2;
+
+                                var x = Math.pow(t * 2, 2);
+                                var y =
+                                    s * 2 * Math.sin(3 * t) * Math.cos(2 * t);
+                                var z =
+                                    (s *
+                                        3 *
+                                        Math.sin(2 * t) *
+                                        Math.cos(5 * t)) /
+                                    2;
+
+                                return point.set(x * sz, y * sz, z * sz);
+                            }),
+                            120
+                        );
+                        scene.add(wrm.group);
+
+                        //makemodel('teapot3', (tea) => { scene.add(tea) });
+
+                        camera.position.z = 300;
+
+                        return t => {
+                            wrm.update(t / 2);
+                        };
+                    });
+                }
+            );
+        </script>
+    </body>
+</html>

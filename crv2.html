@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <link href="/style.css" rel="stylesheet" />
+    </head>
+    <body>
+        <button id="record" type="button" onclick="record()">record</button>
+        <script src="https://unpkg.com/ccapture.js@1.1.0/build/CCapture.all.min.js"></script>
+        <script src="https://unpkg.com/@tweenjs/tween.js@18.6.4/dist/tween.umd.js"></script>
+        <script type="module">
+            import * as THREE from 'https://unpkg.com/three@0.137.5?module';
+            import { OrbitControls } from 'https://unpkg.com/three@0.137.5/examples/jsm/controls/OrbitControls.js?module';
+            import { loop } from './js/setup.js';
+            import {
+                Wrm,
+                loadmodel,
+                makemodel,
+                makecrv,
+                sky,
+            } from './js/wrms.js';
+            import { Curves } from 'https://unpkg.com/three@0.137.5/examples/jsm/curves/CurveExtras.js?module';
+
+            var imgload = new THREE.TextureLoader();
+            imgload.load(
+                // 'img/IMG_0618.jpeg',
+                // 'img/100_3995.JPG',
+                // 'img/Screen Shot 2019-09-04 at 4.25.54 PM.png',
+                // 'img/Screen Shot 2019-06-28 at 3.37.36 PM.png',
+                // 'img/Screen Shot 2019-06-28 at 2.14.59 PM.png',
+                'img/100_4109.JPG',
+                // 'img/IMG_7975.JPG',
+                // 'img/IMG_0373.JPG',
+                // 'img/100_3313.JPG'
+                // 'img/Screen Shot 2019-09-04 at 4.19.34 PM',
+                // 'img/equirect.png',
+                tex => {
+                    loop(25, (scene, camera, renderer) => {
+                        // var orbit = new OrbitControls( camera, renderer.domElement );
+
+                        camera.far = 900;
+                        camera.updateProjectionMatrix();
+
+                        let tf = new Curves.TrefoilKnot(100);
+                        tf.scale = 100;
+
+                        let kc = new Curves.KnotCurve(30);
+
+                        scene.background = sky(renderer, tex);
+
+                        var wrm = new Wrm(
+                            // 'flower',
+                            // 'fel-pro',
+                            'lychee',
+                            // makecrv(function ( t, optionalTarget ) {
+                            //
+                            // 	var point = optionalTarget || new THREE.Vector3();
+                            //
+                            // 	t *= 2 * Math.PI;
+                            //
+                            // 	var R = 20;
+                            // 	var s = 50;
+                            //
+                            // 	var sz = 1.5;
+                            //
+                            // 	var x = s * Math.cos( 2 * t );
+                            // 	var y = Math.cos( t ) * ( R + s * Math.cos( t ) ) ;
+                            // 	var z = Math.sin( t ) * ( R + s * Math.cos( t ) );
+                            //
+                            // 	return point.set( x * sz, y * sz, z * sz );
+                            // }),
+                            new THREE.TubeBufferGeometry(tf, 100, 1, 3, true),
+                            120
+                        );
+                        scene.add(wrm.group);
+
+                        //makemodel('teapot3', (tea) => { scene.add(tea) });
+
+                        camera.position.z = 300;
+
+                        return t => {
+                            wrm.group.rotation.y = Math.PI * 2 * t;
+                            camera.rotation.y = -Math.PI * 2 * t;
+                            wrm.group.rotation.x = Math.PI * 2 * t;
+                            wrm.update(t);
+                        };
+                    });
+                }
+            );
+        </script>
+    </body>
+</html>
