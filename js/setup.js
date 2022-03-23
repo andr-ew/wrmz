@@ -11,8 +11,22 @@ const camera = new THREE.PerspectiveCamera(
     75,
     window.innerWidth / window.innerHeight,
     0.1,
-    1000
+    2000
 );
+
+// var camera;
+// {
+//     width = window.innerWidth;
+//     height = window.innerHeight;
+//     camera = new THREE.OrthographicCamera(
+//         width / -2,
+//         width / 2,
+//         height / 2,
+//         height / -2,
+//         1,
+//         1000
+//     );
+// }
 
 const renderer = new THREE.WebGLRenderer({
     preserveDrawingBuffer: true,
@@ -38,7 +52,7 @@ function resize() {
     camera.aspect = w / h;
     camera.updateProjectionMatrix();
 
-    renderer.setSize(w, h);
+    //renderer.setSize(w, h);
 }
 window.addEventListener('resize', resize);
 

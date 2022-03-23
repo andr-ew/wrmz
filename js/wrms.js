@@ -39,16 +39,18 @@ export var makecrv = function (getPoint) {
     return new THREE.TubeBufferGeometry(crv, 100, 1, 3, true);
 };
 
-export var loadmodel = function (name, onload) {
+export var loadmodel = function (name, onload, texture) {
     var objload = new OBJLoader();
     var bmload = new THREE.TextureLoader();
     //bmload.setOptions( { imageOrientation: 'flipY' } );
 
     var mat, geo;
 
+    const texturePath = texture || 'mod/' + name + '.bmp';
+
     bmload.load(
         // resource URL
-        'mod/' + name + '.bmp',
+        texturePath,
         tex => {
             mat = new THREE.MeshBasicMaterial({ map: tex });
 
@@ -87,10 +89,10 @@ formatters['teapot3'] = mesh => {
 };
 
 formatters['boquet'] = mesh => {
-    mesh.position.z = -275;
-    mesh.position.y = 50;
-    mesh.scale.set(0.5, 0.5, 0.5);
-    mesh.rotateX(Math.PI / 8);
+    mesh.position.z = -100;
+    // mesh.position.y = 50;
+    // mesh.scale.set(0.5, 0.5, 0.5);
+    // mesh.rotateX(Math.PI / 8);
 
     return mesh;
 };
@@ -106,12 +108,46 @@ formatters['tea'] = mesh => {
     return mesh;
 };
 
+formatters['flower'] = mesh => {
+    mesh.position.z = -600;
+    mesh.position.y = -140;
+    // mesh.position.x = -300;
+
+    let g = new THREE.Group();
+    g.add(mesh);
+
+    g.rotateY(((Math.PI * 1) / 2) * 0.9);
+    g.rotateX(((Math.PI * 1) / 4) * 0.8);
+    g.rotateZ(-Math.PI * 0.005);
+
+    g.scale.set(0.5, 0.5, 0.5);
+
+    return g;
+};
+
+formatters['fruits'] = mesh => {
+    mesh.position.z = -590;
+    mesh.position.y = -120;
+    mesh.position.x = 30;
+
+    let g = new THREE.Group();
+    g.add(mesh);
+
+    g.rotateY(Math.PI / 8);
+    g.rotateX(((Math.PI * 1) / 4) * 0.75);
+    g.rotateZ(-Math.PI * 0.04);
+
+    g.scale.set(0.5, 0.5, 0.5);
+
+    return g;
+};
+
 export var makemodel = (name, onload) => {
     loadmodel(name, (geo, mat) => {
         var mesh = new THREE.Mesh(geo, mat);
 
         if (formatters[name]) {
-            formatters[name](mesh);
+            mesh = formatters[name](mesh);
         }
 
         if (onload) onload(mesh);
@@ -127,7 +163,14 @@ export var sky = function (renderer, tex) {
     return hdrCubeRenderTarget.texture;
 };
 
-export var Wrm = function (name, crv, nsegs, onload) {
+export var Wrm = function (
+    name,
+    crv,
+    nsegs,
+    rotation = t => ({ x: -Math.PI / 2 }),
+    texture,
+    onload = () => {}
+) {
     var direction = new THREE.Vector3();
     var binormal = new THREE.Vector3();
     var normal = new THREE.Vector3();
@@ -135,31 +178,42 @@ export var Wrm = function (name, crv, nsegs, onload) {
     var lookAt = new THREE.Vector3();
 
     var segments = [];
+    var groups = [];
     this.group = new THREE.Group();
 
-    loadmodel(name, (geo, mat) => {
-        for (let i = 0; i < nsegs; i++) {
-            var mesh = new THREE.Mesh(geo, mat);
-            if (formatters[name]) {
-                formatters[name](mesh);
+    loadmodel(
+        name,
+        (geo, mat) => {
+            for (let i = 0; i < nsegs; i++) {
+                var mesh = new THREE.Mesh(geo, mat);
+                if (formatters[name]) {
+                    mesh = formatters[name](mesh);
+                }
+
+                var container = new THREE.Group();
+                container.add(mesh);
+                groups[i] = container;
+                // container.rotation.x = ;
+
+                // for (const ax in rotation) container.rotation[ax] = rotation[ax];
+
+                segments[i] = new THREE.Group();
+                segments[i].add(container);
+
+                this.group.add(segments[i]);
             }
-
-            var container = new THREE.Group();
-            container.add(mesh);
-            container.rotation.x = -Math.PI / 2;
-            segments[i] = new THREE.Group();
-            segments[i].add(container);
-
-            this.group.add(segments[i]);
-        }
-
-        if (onload) onload();
-    });
+            onload();
+        },
+        texture
+    );
 
     this.update = function (T) {
         for (let i in segments) {
             let seg = segments[i];
             let t = (T + i / nsegs) % 1;
+
+            const rot = rotation(t);
+            for (const ax in rot) groups[i].rotation[ax] = rot[ax];
 
             crv.parameters.path.getPointAt(t, position);
             position.multiplyScalar(1);

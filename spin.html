@@ -20,14 +20,14 @@
                 var g = new THREE.Group();
                 scene.add(g);
 
-                makemodel('tea', b => {
+                makemodel('fruits', b => {
                     g.add(b);
                 });
 
                 camera.position.z = 300;
 
                 return t => {
-                    g.rotation.y = Math.PI * 2 * t;
+                    //g.rotation.y = Math.PI * 2 * t;
                     // g.rotation.x = Math.PI * 2 * t;
                     // g.rotation.z = -Math.PI * 2 * t;
                 };
