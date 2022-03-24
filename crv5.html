@@ -24,7 +24,7 @@
                 scene.add(parent);
 
                 var wrm = new Wrm(
-                    'boquet',
+                    'tea',
                     makecrv(function (t, optionalTarget) {
                         var point = optionalTarget || new THREE.Vector3();
 
@@ -33,7 +33,7 @@
                         var R = 20;
                         var s = 50;
 
-                        var sz = 3;
+                        var sz = 3.5;
 
                         var x = s * Math.sin(1 * t);
                         var y = Math.cos(t) * (R + s * Math.cos(t));
@@ -43,7 +43,12 @@
                     }),
                     // new THREE.TubeBufferGeometry(
                     //     tf , 100, 1, 3, true ),
-                    40
+                    40,
+                    t => ({
+                        x: -Math.PI / 2,
+                        y: Math.PI * 2 * t,
+                        z: (Math.PI / 2) * Math.sin(2 * Math.PI * t),
+                    })
                 );
                 scene.add(wrm.group);
 
@@ -53,6 +58,8 @@
 
                 return t => {
                     wrm.group.rotation.y = Math.PI * 2 * t;
+                    //wrm.group.rotation.x =
+                    //(Math.sin(Math.PI * 2 * t) * Math.PI) / 2;
                     wrm.update(t * 2);
                 };
             });

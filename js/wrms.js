@@ -89,10 +89,10 @@ formatters['teapot3'] = mesh => {
 };
 
 formatters['boquet'] = mesh => {
-    mesh.position.z = -100;
-    // mesh.position.y = 50;
-    // mesh.scale.set(0.5, 0.5, 0.5);
-    // mesh.rotateX(Math.PI / 8);
+    mesh.position.z = -270;
+    mesh.position.y = 50;
+    mesh.scale.set(0.5, 0.5, 0.5);
+    mesh.rotateX(Math.PI / 8);
 
     return mesh;
 };
@@ -202,7 +202,7 @@ export var Wrm = function (
 
                 this.group.add(segments[i]);
             }
-            onload();
+            onload(this);
         },
         texture
     );
@@ -253,6 +253,66 @@ export var Wrm = function (
             seg.matrix.lookAt(seg.position, lookAt, normal);
             seg.quaternion.setFromRotationMatrix(seg.matrix);
         }
+    };
+};
+
+export var Coaster = function (camera, crv, offset = 60, lookAhead = false) {
+    var direction = new THREE.Vector3();
+    var binormal = new THREE.Vector3();
+    var normal = new THREE.Vector3();
+    var position = new THREE.Vector3();
+    var lookAt = new THREE.Vector3();
+
+    this.offset = offset;
+    this.scale = 1;
+    this.lookAhead = lookAhead;
+
+    this.update = function (t) {
+        let tubeGeometry = crv;
+        let splineCamera = camera;
+
+        tubeGeometry.parameters.path.getPointAt(t, position);
+        position.multiplyScalar(this.scale);
+
+        // interpolation
+
+        const segments = tubeGeometry.tangents.length;
+        const pickt = t * segments;
+        const pick = Math.floor(pickt);
+        const pickNext = (pick - 1) % segments;
+
+        binormal.subVectors(
+            tubeGeometry.binormals[pickNext] || new THREE.Vector3(),
+            tubeGeometry.binormals[pick] || new THREE.Vector3()
+        );
+        binormal
+            .multiplyScalar(pickt - pick)
+            .add(tubeGeometry.binormals[pick] || new THREE.Vector3());
+
+        tubeGeometry.parameters.path.getTangentAt(t, direction);
+
+        normal.copy(binormal).cross(direction);
+
+        // we move on a offset on its binormal
+
+        position.add(normal.clone().multiplyScalar(this.offset));
+
+        splineCamera.position.copy(position);
+        //cameraEye.position.copy(position);
+
+        // using arclength for stablization in look ahead
+
+        tubeGeometry.parameters.path.getPointAt(
+            (t + 30 / tubeGeometry.parameters.path.getLength()) % 1,
+            lookAt
+        );
+        lookAt.multiplyScalar(this.scale);
+
+        // camera orientation 2 - up orientation via normal
+
+        if (!this.lookAhead) lookAt.copy(position).add(direction);
+        splineCamera.matrix.lookAt(splineCamera.position, lookAt, normal);
+        splineCamera.quaternion.setFromRotationMatrix(splineCamera.matrix);
     };
 };
 
