@@ -10,8 +10,8 @@ scene.background = null;
 const camera = new THREE.PerspectiveCamera(
     75,
     window.innerWidth / window.innerHeight,
-    0.1,
-    1000
+    1,
+    800
     //400
 );
 
@@ -38,7 +38,7 @@ renderer.setPixelRatio(window.devicePixelRatio);
 document.body.appendChild(renderer.domElement);
 
 //setting the background to blue, nice for chromakeys
-renderer.setClearColor(0x0000ff, 1);
+renderer.setClearColor(0x00ff00, 1);
 
 function resize() {
     let w, h;
@@ -53,7 +53,7 @@ function resize() {
     camera.aspect = w / h;
     camera.updateProjectionMatrix();
 
-    //renderer.setSize(w, h);
+    renderer.setSize(w, h);
 }
 window.addEventListener('resize', resize);
 
