@@ -408,66 +408,51 @@ export var Seq2 = function (frames, state, update, time, wait, ease, looptime) {
     };
 };
 
-const elem = (tagName, props, append) => {
-    const el = document.createElement(tagName);
-    if (props) {
-        for (var name in props) {
-            el.setAttribute(name, props[name]);
+export var getTVPaths = (path, onload) => {
+    (async () => {
+        try {
+            const res = await fetch(path);
+            const data = await res.json();
+            onload(data);
+        } catch (e) {
+            console.error(e);
         }
-    }
-
-    if (append) el.appendChild(append);
-
-    return el;
+    })();
 };
 
-export var TV = function (path) {
+const fps = 24;
+export var TV = function () {
     this.group = new THREE.Group();
 
-    const stringVersion = `
-        <video
-            id="video"
-            loop
-            crossOrigin="anonymous"
-            playsinline
-            autoplay
-            muted
-            style="display: none"
-        >
-            <source
-                src="vid/frog.mp4"
-                type='video/mp4; codecs="avc1.42E01E, mp4a.40.2"'
-            />
-        </video>
-    `;
+    var framePaths, images;
 
-    const video = elem(
-        'video',
-        {
-            loop: '',
-            crossOrigin: 'anonymous',
-            playsinline: '',
-            autoplay: '',
-            muted: '',
-            style: 'display: none',
-        },
-        elem('source', {
-            src: path,
-            type: 'video/mp4; codecs="avc1.42E01E, mp4a.40.2"',
-        })
-    );
-    document.body.appendChild(video);
-
-    const texture = new THREE.VideoTexture(video);
+    const texture = new THREE.Texture();
 
     const geometry = new THREE.PlaneGeometry(640, 480);
     const material = new THREE.MeshBasicMaterial({
         side: THREE.DoubleSide,
-        color: 0xffffff,
         map: texture,
     });
     const plane = new THREE.Mesh(geometry, material);
     this.group.add(plane);
 
-    this.play = () => video.play();
+    this.load = (paths, idx) => {
+        framePaths = paths[idx];
+        images = paths[idx].map(path => {
+            const img = new Image();
+            img.src = `vid_frames/${idx}/${path}`;
+
+            return img;
+        });
+
+        console.log({ images });
+    };
+
+    this.update = elapsed => {
+        if (images) {
+            const i = Math.floor(elapsed / fps) % framePaths.length;
+            texture.image = images[i];
+            texture.needsUpdate = true;
+        }
+    };
 };
