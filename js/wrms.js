@@ -316,6 +316,75 @@ export var Coaster = function (camera, crv, offset = 60, lookAhead = false) {
     };
 };
 
+export var PathPlacer = function (obj, crv) {
+    var direction = new THREE.Vector3();
+    var binormal = new THREE.Vector3();
+    var normal = new THREE.Vector3();
+    var position = new THREE.Vector3();
+    var lookAt = new THREE.Vector3();
+
+    this.offset = 1;
+    this.scale = 1;
+    this.position = 0;
+    this.rotation = 0;
+
+    //TODO: modify
+    this.update = function () {
+        let tubeGeometry = crv;
+        let splineCamera = obj;
+        let t = this.position;
+
+        tubeGeometry.parameters.path.getPointAt(t, position);
+        position.multiplyScalar(this.scale);
+
+        // interpolation
+
+        const segments = tubeGeometry.tangents.length;
+        const pickt = t * segments;
+        const pick = Math.floor(pickt);
+        const pickNext = (pick - 1) % segments;
+
+        binormal.subVectors(
+            tubeGeometry.binormals[pickNext] || new THREE.Vector3(),
+            tubeGeometry.binormals[pick] || new THREE.Vector3()
+        );
+        binormal
+            .multiplyScalar(pickt - pick)
+            .add(tubeGeometry.binormals[pick] || new THREE.Vector3());
+
+        tubeGeometry.parameters.path.getTangentAt(t, direction);
+
+        normal.copy(binormal).cross(direction);
+
+        // we move on a offset on its binormal
+
+        position.add(
+            normal
+                .clone()
+                .multiplyScalar(this.offset)
+                .applyAxisAngle(direction, this.rotation)
+        );
+
+        splineCamera.position.copy(position);
+
+        // using arclength for stablization in look ahead
+
+        tubeGeometry.parameters.path.getPointAt(
+            (t + 30 / tubeGeometry.parameters.path.getLength()) % 1,
+            lookAt
+        );
+        lookAt.multiplyScalar(this.scale);
+
+        // camera orientation 2 - up orientation via normal
+
+        if (!this.lookAhead) lookAt.copy(position).add(direction);
+        splineCamera.matrix.lookAt(splineCamera.position, lookAt, normal);
+        splineCamera.quaternion.setFromRotationMatrix(splineCamera.matrix);
+
+        splineCamera.rotation.z = 2 * Math.PI - this.rotation + Math.PI / 2;
+    };
+};
+
 export var Seq = function (args) {
     var tweens = [];
     var grp = new TWEEN.Group();
@@ -421,14 +490,17 @@ export var getTVPaths = (path, onload) => {
 };
 
 const fps = 24;
-export var TV = function () {
+export var TV = function (size) {
     this.group = new THREE.Group();
 
     var framePaths, images;
 
     const texture = new THREE.Texture();
 
-    const geometry = new THREE.PlaneGeometry(640, 480);
+    const geometry = new THREE.PlaneGeometry(
+        (640 / 480) * size,
+        (480 / 480) * size
+    );
     const material = new THREE.MeshBasicMaterial({
         side: THREE.DoubleSide,
         map: texture,

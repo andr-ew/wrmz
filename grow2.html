@@ -20,6 +20,7 @@
                 sky,
                 getTVPaths,
                 TV,
+                PathPlacer,
             } from './js/wrms.js';
             import { Curves } from 'https://unpkg.com/three@0.137.5/examples/jsm/curves/CurveExtras.js?module';
 
@@ -28,7 +29,7 @@
                 //'img/IMG_1922.JPG',
                 'img/IMG_1922 2.JPG',
                 tex => {
-                    loop(3, (scene, camera, renderer) => {
+                    loop(60 * 4 + 13, (scene, camera, renderer) => {
                         scene.background = sky(renderer, tex);
 
                         var orbit = new OrbitControls(
@@ -36,16 +37,53 @@
                             renderer.domElement
                         );
 
-                        var tv = new TV(480);
+                        var parent = new THREE.Object3D();
+                        scene.add(parent);
+
+                        let crv = new THREE.TubeBufferGeometry(
+                            new Curves.DecoratedTorusKnot5c(900),
+                            //new Curves.DecoratedTorusKnot4b(450),
+                            //new Curves.CinquefoilKnot(350),
+                            1600,
+                            1,
+                            3,
+                            true
+                        );
+
+                        var wrm = new Wrm(
+                            'flower',
+                            crv,
+                            1000,
+                            t => ({ x: (-Math.PI / 2) * 1, z: 0 * -Math.PI }),
+                            null,
+                            wrm => {
+                                wrm.update(0);
+                            }
+                        );
+                        scene.add(wrm.group);
+
+                        camera.position.z = 300;
+
+                        //let coaster = new Coaster(camera, crv, 60, false);
+
+                        var tv = new TV(100);
                         scene.add(tv.group);
+
+                        var placer = new PathPlacer(tv.group, crv);
+                        placer.offset = 125;
+                        placer.position = 0.99;
 
                         getTVPaths('ls_vid.json', paths =>
                             tv.load(paths, 'frog')
                         );
 
-                        camera.position.z = 500;
-
                         return (t, elapsed) => {
+                            //coaster.update(1 - t * 0.4);
+                            //wrm.update(t * 2);
+
+                            placer.rotation = Math.PI * 2 * t * 30;
+                            placer.update();
+
                             tv.update(elapsed);
                         };
                     });
