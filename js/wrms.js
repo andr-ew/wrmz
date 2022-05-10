@@ -527,8 +527,6 @@ export var TV = function (size) {
 
             return img;
         });
-
-        console.log({ images });
     };
 
     this.update = elapsed => {

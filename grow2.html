@@ -24,6 +24,8 @@
             } from './js/wrms.js';
             import { Curves } from 'https://unpkg.com/three@0.137.5/examples/jsm/curves/CurveExtras.js?module';
 
+            const TVcount = 50;
+
             new THREE.TextureLoader().load(
                 //'img/IMG_0331.jpeg',
                 //'img/IMG_1922.JPG',
@@ -66,25 +68,47 @@
 
                         let coaster = new Coaster(camera, crv, 60, false);
 
-                        var tv = new TV(100);
-                        scene.add(tv.group);
+                        const tvs = [],
+                            placers = [];
+                        for (let i = 0; i < TVcount; i++) {
+                            let tv = new TV(100);
+                            scene.add(tv.group);
 
-                        var placer = new PathPlacer(tv.group, crv);
-                        placer.offset = 125;
-                        placer.position = 0.99;
+                            let placer = new PathPlacer(tv.group, crv);
+                            placer.offset = Math.random() * 50 + 100;
+                            placer.position = i / TVcount;
 
-                        getTVPaths('ls_vid.json', paths =>
-                            tv.load(paths, 'frog')
-                        );
+                            tvs[i] = tv;
+                            placers[i] = placer;
+                        }
+
+                        //TODO: load all frames, then pass to TVs (currently there are duplicate frames in memory)
+                        getTVPaths('ls_vid.json', paths => {
+                            const ids = Object.keys(paths);
+
+                            tvs.forEach((tv, i) => {
+                                const id = ids[i % ids.length];
+                                tv.load(paths, id);
+                            });
+                        });
 
                         return (t, elapsed) => {
                             coaster.update(1 - t * 0.4);
                             //wrm.update(t * 2);
 
-                            placer.rotation = Math.PI * 2 * t * 30;
-                            placer.update();
+                            for (let i = 0; i < TVcount; i++) {
+                                const tv = tvs[i];
+                                const placer = placers[i];
+                                const scaler = (placer.offset - 100) / 50;
+                                const speed = scaler * 30 - 15;
+                                const phase = scaler * 2 * Math.PI;
 
-                            tv.update(elapsed);
+                                placer.rotation =
+                                    Math.PI * 2 * t * speed + phase;
+                                placer.update();
+
+                                tv.update(elapsed);
+                            }
                         };
                     });
                 }
