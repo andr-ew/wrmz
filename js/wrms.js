@@ -323,6 +323,9 @@ export var PathPlacer = function (obj, crv) {
     var position = new THREE.Vector3();
     var lookAt = new THREE.Vector3();
 
+    var q = new THREE.Quaternion();
+    var point = new THREE.Vector3();
+
     this.offset = 1;
     this.scale = 1;
     this.position = 0;
@@ -359,10 +362,8 @@ export var PathPlacer = function (obj, crv) {
         // we move on a offset on its binormal
 
         position.add(
-            normal
-                .clone()
-                .multiplyScalar(this.offset)
-                .applyAxisAngle(direction, this.rotation)
+            normal.clone().multiplyScalar(this.offset)
+            //.applyAxisAngle(direction, this.rotation)
         );
 
         splineCamera.position.copy(position);
@@ -381,7 +382,17 @@ export var PathPlacer = function (obj, crv) {
         splineCamera.matrix.lookAt(splineCamera.position, lookAt, normal);
         splineCamera.quaternion.setFromRotationMatrix(splineCamera.matrix);
 
-        splineCamera.rotation.z = 2 * Math.PI - this.rotation + Math.PI / 2;
+        //splineCamera.rotation.z = 2 * Math.PI - this.rotation + Math.PI / 2;
+
+        //rotate object around spline based on this.rotation
+        tubeGeometry.parameters.path.getPointAt(t, point);
+        q.setFromAxisAngle(direction, this.rotation);
+
+        splineCamera.applyQuaternion(q);
+
+        splineCamera.position.sub(point);
+        splineCamera.position.applyQuaternion(q);
+        splineCamera.position.add(point);
     };
 };
 

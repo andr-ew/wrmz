@@ -64,7 +64,7 @@
 
                         camera.position.z = 300;
 
-                        //let coaster = new Coaster(camera, crv, 60, false);
+                        let coaster = new Coaster(camera, crv, 60, false);
 
                         var tv = new TV(100);
                         scene.add(tv.group);
@@ -78,7 +78,7 @@
                         );
 
                         return (t, elapsed) => {
-                            //coaster.update(1 - t * 0.4);
+                            coaster.update(1 - t * 0.4);
                             //wrm.update(t * 2);
 
                             placer.rotation = Math.PI * 2 * t * 30;
