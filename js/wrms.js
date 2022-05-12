@@ -316,7 +316,7 @@ export var Coaster = function (camera, crv, offset = 60, lookAhead = false) {
     };
 };
 
-export var PathPlacer = function (obj, crv) {
+export var SignPost = function (obj, crv) {
     var direction = new THREE.Vector3();
     var binormal = new THREE.Vector3();
     var normal = new THREE.Vector3();
@@ -393,6 +393,86 @@ export var PathPlacer = function (obj, crv) {
         splineCamera.position.sub(point);
         splineCamera.position.applyQuaternion(q);
         splineCamera.position.add(point);
+    };
+};
+
+const wrap_minmax = (n, min = 0, max = 1) => {
+    const r = max - min;
+    while (n < min) n += r;
+    while (n > max) n -= r;
+    return n;
+};
+
+export var Billboard = function (obj, crv, lookAtDistance) {
+    var direction = new THREE.Vector3();
+    var binormal = new THREE.Vector3();
+    var normal = new THREE.Vector3();
+    var position = new THREE.Vector3();
+    var lookAt = new THREE.Vector3();
+
+    this.offset = 1;
+    this.scale = 1;
+    this.position = 0;
+    this.rotation = 0;
+
+    //TODO: modify
+    this.update = function () {
+        let tubeGeometry = crv;
+        let splineCamera = obj;
+        let t = this.position;
+
+        tubeGeometry.parameters.path.getPointAt(t, position);
+        position.multiplyScalar(this.scale);
+
+        // interpolation
+
+        const segments = tubeGeometry.tangents.length;
+        const pickt = t * segments;
+        const pick = Math.floor(pickt);
+        const pickNext = (pick - 1) % segments;
+
+        binormal.subVectors(
+            tubeGeometry.binormals[pickNext] || new THREE.Vector3(),
+            tubeGeometry.binormals[pick] || new THREE.Vector3()
+        );
+        binormal
+            .multiplyScalar(pickt - pick)
+            .add(tubeGeometry.binormals[pick] || new THREE.Vector3());
+
+        tubeGeometry.parameters.path.getTangentAt(t, direction);
+
+        normal.copy(binormal).cross(direction);
+
+        // we move on a offset on its binormal
+
+        position.add(
+            normal
+                .clone()
+                .multiplyScalar(this.offset)
+                .applyAxisAngle(direction, this.rotation)
+        );
+
+        splineCamera.position.copy(position);
+
+        // splineCamera.lookAt(
+        //     tubeGeometry.parameters.path.getPointAt(
+        //         wrap_minmax(t + lookAtDistance)
+        //     )
+        // );
+
+        // using arclength for stablization in look ahead
+
+        tubeGeometry.parameters.path.getPointAt(
+            wrap_minmax(t + lookAtDistance),
+            lookAt
+        );
+        //lookAt.multiplyScalar(this.scale);
+
+        // camera orientation 2 - up orientation via normal
+
+        //if (!this.lookAhead) lookAt.copy(position).add(normal);
+        splineCamera.matrix.lookAt(splineCamera.position, lookAt, normal);
+        splineCamera.quaternion.setFromRotationMatrix(splineCamera.matrix);
     };
 };
 
@@ -500,11 +580,31 @@ export var getTVPaths = (path, onload) => {
     })();
 };
 
-const fps = 24;
-export var TV = function (size) {
-    this.group = new THREE.Group();
+export var getTVFrames = (listPath, onload) => {
+    getTVPaths(listPath, paths => {
+        const frames = {};
 
-    var framePaths, images;
+        for (const id in paths) {
+            frames[id] = paths[id]
+                .map(framePath => {
+                    const img = new Image();
+                    img.src = `vid_frames/${id}/${framePath}`;
+
+                    return img;
+                })
+                .sort();
+        }
+
+        onload(frames);
+    });
+};
+
+//TODO: lookAt option (face n segments away from position segment)
+export var TV = function (size) {
+    const fps = 24;
+
+    this.group = new THREE.Group();
+    this.frames = null;
 
     const texture = new THREE.Texture();
 
@@ -519,20 +619,10 @@ export var TV = function (size) {
     const plane = new THREE.Mesh(geometry, material);
     this.group.add(plane);
 
-    this.load = (paths, idx) => {
-        framePaths = paths[idx];
-        images = paths[idx].map(path => {
-            const img = new Image();
-            img.src = `vid_frames/${idx}/${path}`;
-
-            return img;
-        });
-    };
-
     this.update = elapsed => {
-        if (images) {
-            const i = Math.floor(elapsed / fps) % framePaths.length;
-            texture.image = images[i];
+        if (this.frames) {
+            const i = Math.floor(elapsed / fps) % this.frames.length;
+            texture.image = this.frames[i];
             texture.needsUpdate = true;
         }
     };
