@@ -22,11 +22,14 @@
                 TV,
                 SignPost,
                 Billboard,
+                JumboSphere,
             } from './js/wrms.js';
             import { Curves } from 'https://unpkg.com/three@0.137.5/examples/jsm/curves/CurveExtras.js?module';
 
             const signPostCount = 50;
             const billboardCount = 25;
+
+            window.THREE = THREE;
 
             new THREE.TextureLoader().load(
                 //'img/IMG_0331.jpeg',
@@ -95,10 +98,10 @@
                             billboards[i] = bill;
                         }
 
-                        //TODO: jumbotrons: outer sphere of very large TVs surrounding timepath (refer to rcps icosohedron placement)
-                        //billboards did not turn out as intentended but we'll keep ~50% of them for weirdness
+                        var jumbsphere = new JumboSphere(42 / 2, 400);
+                        scene.add(jumbsphere.group);
 
-                        /*
+                        //*
                         getTVFrames('ls_vid.json', frames => {
                             const ids = Object.keys(frames);
                             tvPosts.forEach((tvPost, i) => {
@@ -111,13 +114,18 @@
                                 const id = ids2[i % ids2.length];
                                 tv.frames = frames[id];
                             });
+
+                            jumbsphere.tvs.forEach((tv, i) => {
+                                const id = ids[i % ids.length];
+                                tv.frames = frames[id];
+                            });
                         });
                         //*/
 
-                        //let coaster = new Coaster(camera, crv, 60, false);
+                        let coaster = new Coaster(camera, crv, 60, false);
 
                         return (t, elapsed) => {
-                            //coaster.update(1 - t * 0.4);
+                            coaster.update(1 - t * 0.4);
                             //wrm.update(t * 2);
 
                             for (let i = 0; i < signPostCount; i++) {
@@ -144,6 +152,8 @@
                                 bill.update();
                                 tv.update(elapsed);
                             }
+
+                            jumbsphere.tvs.forEach(tv => tv.update(elapsed));
                         };
                     });
                 }

@@ -627,3 +627,48 @@ export var TV = function (size) {
         }
     };
 };
+
+const getGeometryVerticies = geometry => {
+    const positionAttribute = geometry.getAttribute('position');
+    const vertices = {};
+    for (let i = 0; i < positionAttribute.count; i++) {
+        let point = new THREE.Vector3().fromBufferAttribute(
+            positionAttribute,
+            i
+        );
+        const key = [point.x, point.y, point.z].join(',');
+        if (!vertices[key]) {
+            vertices[key] = point;
+        }
+    }
+
+    return Object.values(vertices);
+};
+
+const shuffle = array => {
+    for (let i = array.length - 1; i > 0; i--) {
+        let j = Math.floor(Math.random() * i);
+        let k = array[i];
+        array[i] = array[j];
+        array[j] = k;
+    }
+};
+
+export var JumboSphere = function (count, size) {
+    this.group = new THREE.Group();
+    var ico = new THREE.IcosahedronGeometry(2000, 1);
+    var vertices = getGeometryVerticies(ico);
+    shuffle(vertices);
+
+    this.tvs = [];
+
+    for (let i = 0; i < count; i++) {
+        const tv = new TV(size);
+
+        tv.group.position.copy(vertices[i % vertices.length]);
+        tv.group.lookAt(0, 0, 0);
+        this.group.add(tv.group);
+
+        this.tvs[i] = tv;
+    }
+};
