@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <link href="/style.css" rel="stylesheet" />
+    </head>
+    <body>
+        <button id="record" type="button" onclick="record()">record</button>
+        <script src="https://unpkg.com/ccapture.js@1.1.0/build/CCapture.all.min.js"></script>
+        <script src="https://unpkg.com/@tweenjs/tween.js@18.6.4/dist/tween.umd.js"></script>
+        <script type="module">
+            import * as THREE from 'https://unpkg.com/three@0.137.5?module';
+            import { OrbitControls } from 'https://unpkg.com/three@0.137.5/examples/jsm/controls/OrbitControls.js?module';
+            import { loop } from './js/setup.js';
+            import {
+                Wrm,
+                Coaster,
+                loadmodel,
+                makemodel,
+                makecrv,
+                sky,
+                getTVFrames,
+                TV,
+                SignPost,
+                Billboard,
+                JumboSphere,
+            } from './js/wrms.js';
+            import { Curves } from 'https://unpkg.com/three@0.137.5/examples/jsm/curves/CurveExtras.js?module';
+
+            const signPostCount = 50;
+            const billboardCount = 25;
+
+            window.THREE = THREE;
+
+            new THREE.TextureLoader().load(
+                //'img/IMG_0331.jpeg',
+                //'img/IMG_1922.JPG',
+                'img/IMG_1922 2.JPG',
+                tex => {
+                    loop(60 * 4 + 13, (scene, camera, renderer) => {
+                        scene.background = sky(renderer, tex);
+
+                        var orbit = new OrbitControls(
+                            camera,
+                            renderer.domElement
+                        );
+
+                        let crv = new THREE.TubeBufferGeometry(
+                            new Curves.DecoratedTorusKnot5c(900),
+                            1600,
+                            1,
+                            3,
+                            true
+                        );
+
+                        var wrm = new Wrm(
+                            'flower',
+                            crv,
+                            1000,
+                            t => ({ x: (-Math.PI / 2) * 1, z: 0 * -Math.PI }),
+                            null,
+                            wrm => {
+                                wrm.update(0);
+                            }
+                        );
+                        scene.add(wrm.group);
+
+                        camera.position.z = 1600;
+
+                        /*
+                        TODO: 
+                        - I like how many TVs there are now but I wish they entered into view more gradually
+                        - solution: each TV has a unique delay before being added to the scene, BUT will wait to add itself when position is not in the viewport
+                            - specifically for jumbos & billboards, signposts are probably fine as-is
+                            - https://stackoverflow.com/questions/29758233/three-js-check-if-object-is-still-in-view-of-the-camera
+                                - will probably want to set up a mini test for this
+                        */
+
+                        //TODO: consider adding some wrms (???)
+
+                        const tvPosts = [],
+                            posts = [];
+                        for (let i = 0; i < signPostCount; i++) {
+                            let tvPost = new TV(100);
+                            scene.add(tvPost.group);
+
+                            let post = new SignPost(tvPost.group, crv);
+                            post.offset = Math.random() * 50 + 100;
+                            post.position = i / signPostCount;
+
+                            tvPosts[i] = tvPost;
+                            posts[i] = post;
+                        }
+
+                        //TODO: try smaller, less billboards
+                        const tvBillboards = [],
+                            billboards = [];
+                        for (let i = 0; i < billboardCount; i++) {
+                            let tvBill = new TV(200);
+                            scene.add(tvBill.group);
+
+                            let bill = new Billboard(tvBill.group, crv, 0.1);
+                            bill.offset = Math.random() * 100 + 500;
+                            bill.position =
+                                (i / billboardCount + 1 / billboardCount / 2) %
+                                1;
+                            bill.rotation =
+                                Math.PI * Math.random() + Math.PI * (2 / 2);
+
+                            tvBillboards[i] = tvBill;
+                            billboards[i] = bill;
+                        }
+
+                        //TODO: try less jumbos but larger (back to 500)
+                        var jumbsphere = new JumboSphere(42 / 2, 400);
+                        scene.add(jumbsphere.group);
+
+                        //*
+                        getTVFrames('ls_vid.json', frames => {
+                            const ids = Object.keys(frames);
+                            tvPosts.forEach((tvPost, i) => {
+                                const id = ids[i % ids.length];
+                                tvPost.frames = frames[id];
+                            });
+
+                            const ids2 = Object.keys(frames).reverse();
+                            tvBillboards.forEach((tv, i) => {
+                                const id = ids2[i % ids2.length];
+                                tv.frames = frames[id];
+                            });
+
+                            jumbsphere.tvs.forEach((tv, i) => {
+                                const id = ids[i % ids.length];
+                                tv.frames = frames[id];
+                            });
+                        });
+                        //*/
+
+                        let coaster = new Coaster(camera, crv, 60, false);
+
+                        return (t, elapsed) => {
+                            coaster.update(1 - t * 0.4);
+                            //wrm.update(t * 2);
+
+                            for (let i = 0; i < signPostCount; i++) {
+                                const tvPost = tvPosts[i];
+                                const post = posts[i];
+                                const scaler = (post.offset - 100) / 50;
+                                const speed = scaler * 30 - 15;
+                                const phase = scaler * 2 * Math.PI;
+
+                                post.rotation = Math.PI * 2 * t * speed + phase;
+                                post.update();
+
+                                tvPost.update(elapsed);
+                            }
+
+                            for (let i = 0; i < billboardCount; i++) {
+                                const tv = tvBillboards[i];
+                                const bill = billboards[i];
+                                const scaler = (bill.offset - 500) / 100;
+                                const speed = (scaler * 10 - 5) / 4;
+                                const phase = scaler * 2 * Math.PI;
+
+                                bill.rotation = Math.PI * 2 * t * speed + phase;
+                                bill.update();
+                                tv.update(elapsed);
+                            }
+
+                            jumbsphere.tvs.forEach(tv => tv.update(elapsed));
+                        };
+                    });
+                }
+            );
+        </script>
+    </body>
+</html>

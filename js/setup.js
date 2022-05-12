@@ -1,4 +1,5 @@
 import * as THREE from 'https://unpkg.com/three@0.137.5?module';
+import Stats from 'https://unpkg.com/three@0.137.5/examples/jsm/libs/stats.module.js?module';
 
 let start, capturer, recording, width, height;
 
@@ -11,7 +12,7 @@ const camera = new THREE.PerspectiveCamera(
     75,
     window.innerWidth / window.innerHeight,
     1,
-    800
+    3400
     //400
 );
 
@@ -39,6 +40,9 @@ document.body.appendChild(renderer.domElement);
 
 //setting the background to blue, nice for chromakeys
 renderer.setClearColor(0x00ff00, 1);
+
+const stats = new Stats();
+document.body.appendChild(stats.dom);
 
 function resize() {
     let w, h;

@@ -316,6 +316,166 @@ export var Coaster = function (camera, crv, offset = 60, lookAhead = false) {
     };
 };
 
+export var SignPost = function (obj, crv) {
+    var direction = new THREE.Vector3();
+    var binormal = new THREE.Vector3();
+    var normal = new THREE.Vector3();
+    var position = new THREE.Vector3();
+    var lookAt = new THREE.Vector3();
+
+    var q = new THREE.Quaternion();
+    var point = new THREE.Vector3();
+
+    this.offset = 1;
+    this.scale = 1;
+    this.position = 0;
+    this.rotation = 0;
+
+    //TODO: modify
+    this.update = function () {
+        let tubeGeometry = crv;
+        let splineCamera = obj;
+        let t = this.position;
+
+        tubeGeometry.parameters.path.getPointAt(t, position);
+        position.multiplyScalar(this.scale);
+
+        // interpolation
+
+        const segments = tubeGeometry.tangents.length;
+        const pickt = t * segments;
+        const pick = Math.floor(pickt);
+        const pickNext = (pick - 1) % segments;
+
+        binormal.subVectors(
+            tubeGeometry.binormals[pickNext] || new THREE.Vector3(),
+            tubeGeometry.binormals[pick] || new THREE.Vector3()
+        );
+        binormal
+            .multiplyScalar(pickt - pick)
+            .add(tubeGeometry.binormals[pick] || new THREE.Vector3());
+
+        tubeGeometry.parameters.path.getTangentAt(t, direction);
+
+        normal.copy(binormal).cross(direction);
+
+        // we move on a offset on its binormal
+
+        position.add(
+            normal.clone().multiplyScalar(this.offset)
+            //.applyAxisAngle(direction, this.rotation)
+        );
+
+        splineCamera.position.copy(position);
+
+        // using arclength for stablization in look ahead
+
+        tubeGeometry.parameters.path.getPointAt(
+            (t + 30 / tubeGeometry.parameters.path.getLength()) % 1,
+            lookAt
+        );
+        lookAt.multiplyScalar(this.scale);
+
+        // camera orientation 2 - up orientation via normal
+
+        if (!this.lookAhead) lookAt.copy(position).add(direction);
+        splineCamera.matrix.lookAt(splineCamera.position, lookAt, normal);
+        splineCamera.quaternion.setFromRotationMatrix(splineCamera.matrix);
+
+        //splineCamera.rotation.z = 2 * Math.PI - this.rotation + Math.PI / 2;
+
+        //rotate object around spline based on this.rotation
+        tubeGeometry.parameters.path.getPointAt(t, point);
+        q.setFromAxisAngle(direction, this.rotation);
+
+        splineCamera.applyQuaternion(q);
+
+        splineCamera.position.sub(point);
+        splineCamera.position.applyQuaternion(q);
+        splineCamera.position.add(point);
+    };
+};
+
+const wrap_minmax = (n, min = 0, max = 1) => {
+    const r = max - min;
+    while (n < min) n += r;
+    while (n > max) n -= r;
+    return n;
+};
+
+export var Billboard = function (obj, crv, lookAtDistance) {
+    var direction = new THREE.Vector3();
+    var binormal = new THREE.Vector3();
+    var normal = new THREE.Vector3();
+    var position = new THREE.Vector3();
+    var lookAt = new THREE.Vector3();
+
+    this.offset = 1;
+    this.scale = 1;
+    this.position = 0;
+    this.rotation = 0;
+
+    //TODO: modify
+    this.update = function () {
+        let tubeGeometry = crv;
+        let splineCamera = obj;
+        let t = this.position;
+
+        tubeGeometry.parameters.path.getPointAt(t, position);
+        position.multiplyScalar(this.scale);
+
+        // interpolation
+
+        const segments = tubeGeometry.tangents.length;
+        const pickt = t * segments;
+        const pick = Math.floor(pickt);
+        const pickNext = (pick - 1) % segments;
+
+        binormal.subVectors(
+            tubeGeometry.binormals[pickNext] || new THREE.Vector3(),
+            tubeGeometry.binormals[pick] || new THREE.Vector3()
+        );
+        binormal
+            .multiplyScalar(pickt - pick)
+            .add(tubeGeometry.binormals[pick] || new THREE.Vector3());
+
+        tubeGeometry.parameters.path.getTangentAt(t, direction);
+
+        normal.copy(binormal).cross(direction);
+
+        // we move on a offset on its binormal
+
+        position.add(
+            normal
+                .clone()
+                .multiplyScalar(this.offset)
+                .applyAxisAngle(direction, this.rotation)
+        );
+
+        splineCamera.position.copy(position);
+
+        // splineCamera.lookAt(
+        //     tubeGeometry.parameters.path.getPointAt(
+        //         wrap_minmax(t + lookAtDistance)
+        //     )
+        // );
+
+        // using arclength for stablization in look ahead
+
+        tubeGeometry.parameters.path.getPointAt(
+            wrap_minmax(t + lookAtDistance),
+            lookAt
+        );
+        //lookAt.multiplyScalar(this.scale);
+
+        // camera orientation 2 - up orientation via normal
+
+        //if (!this.lookAhead) lookAt.copy(position).add(normal);
+        splineCamera.matrix.lookAt(splineCamera.position, lookAt, normal);
+        splineCamera.quaternion.setFromRotationMatrix(splineCamera.matrix);
+    };
+};
+
 export var Seq = function (args) {
     var tweens = [];
     var grp = new TWEEN.Group();
@@ -406,4 +566,109 @@ export var Seq2 = function (frames, state, update, time, wait, ease, looptime) {
         update(state);
         tweens[1].start(0);
     };
+};
+
+export var getTVPaths = (path, onload) => {
+    (async () => {
+        try {
+            const res = await fetch(path);
+            const data = await res.json();
+            onload(data);
+        } catch (e) {
+            console.error(e);
+        }
+    })();
+};
+
+export var getTVFrames = (listPath, onload) => {
+    getTVPaths(listPath, paths => {
+        const frames = {};
+
+        for (const id in paths) {
+            frames[id] = paths[id]
+                .map(framePath => {
+                    const img = new Image();
+                    img.src = `vid_frames/${id}/${framePath}`;
+
+                    return img;
+                })
+                .sort();
+        }
+
+        onload(frames);
+    });
+};
+
+//TODO: lookAt option (face n segments away from position segment)
+export var TV = function (size) {
+    const fps = 24;
+
+    this.group = new THREE.Group();
+    this.frames = null;
+
+    const texture = new THREE.Texture();
+
+    const geometry = new THREE.PlaneGeometry(
+        (640 / 480) * size,
+        (480 / 480) * size
+    );
+    const material = new THREE.MeshBasicMaterial({
+        side: THREE.DoubleSide,
+        map: texture,
+    });
+    const plane = new THREE.Mesh(geometry, material);
+    this.group.add(plane);
+
+    this.update = elapsed => {
+        if (this.frames) {
+            const i = Math.floor(elapsed / fps) % this.frames.length;
+            texture.image = this.frames[i];
+            texture.needsUpdate = true;
+        }
+    };
+};
+
+const getGeometryVerticies = geometry => {
+    const positionAttribute = geometry.getAttribute('position');
+    const vertices = {};
+    for (let i = 0; i < positionAttribute.count; i++) {
+        let point = new THREE.Vector3().fromBufferAttribute(
+            positionAttribute,
+            i
+        );
+        const key = [point.x, point.y, point.z].join(',');
+        if (!vertices[key]) {
+            vertices[key] = point;
+        }
+    }
+
+    return Object.values(vertices);
+};
+
+const shuffle = array => {
+    for (let i = array.length - 1; i > 0; i--) {
+        let j = Math.floor(Math.random() * i);
+        let k = array[i];
+        array[i] = array[j];
+        array[j] = k;
+    }
+};
+
+export var JumboSphere = function (count, size) {
+    this.group = new THREE.Group();
+    var ico = new THREE.IcosahedronGeometry(2000, 1);
+    var vertices = getGeometryVerticies(ico);
+    shuffle(vertices);
+
+    this.tvs = [];
+
+    for (let i = 0; i < count; i++) {
+        const tv = new TV(size);
+
+        tv.group.position.copy(vertices[i % vertices.length]);
+        tv.group.lookAt(0, 0, 0);
+        this.group.add(tv.group);
+
+        this.tvs[i] = tv;
+    }
 };
