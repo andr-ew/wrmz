@@ -66,6 +66,17 @@
 
                         camera.position.z = 1600;
 
+                        /*
+                        TODO: 
+                        - I like how many TVs there are now but I wish they entered into view more gradually
+                        - solution: each TV has a unique delay before being added to the scene, BUT will wait to add itself when position is not in the viewport
+                            - specifically for jumbos & billboards, signposts are probably fine as-is
+                            - https://stackoverflow.com/questions/29758233/three-js-check-if-object-is-still-in-view-of-the-camera
+                                - will probably want to set up a mini test for this
+                        */
+
+                        //TODO: consider adding some wrms (???)
+
                         const tvPosts = [],
                             posts = [];
                         for (let i = 0; i < signPostCount; i++) {
@@ -80,6 +91,7 @@
                             posts[i] = post;
                         }
 
+                        //TODO: try smaller, less billboards
                         const tvBillboards = [],
                             billboards = [];
                         for (let i = 0; i < billboardCount; i++) {
@@ -98,6 +110,7 @@
                             billboards[i] = bill;
                         }
 
+                        //TODO: try less jumbos but larger (back to 500)
                         var jumbsphere = new JumboSphere(42 / 2, 400);
                         scene.add(jumbsphere.group);
 
