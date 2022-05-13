@@ -20,23 +20,23 @@
                 sky,
                 getTVFrames,
                 TV,
-                SignPost,
-                Billboard,
+                SignPostPlacer,
+                BillboardPlacer,
                 JumboSphere,
+                ObjectInViewportChecker,
             } from './js/wrms.js';
             import { Curves } from 'https://unpkg.com/three@0.137.5/examples/jsm/curves/CurveExtras.js?module';
 
-            const signPostCount = 50;
-            const billboardCount = 25;
-
             window.THREE = THREE;
+
+            const duration = 60 * 4 + 13;
 
             new THREE.TextureLoader().load(
                 //'img/IMG_0331.jpeg',
                 //'img/IMG_1922.JPG',
                 'img/IMG_1922 2.JPG',
                 tex => {
-                    loop(60 * 4 + 13, (scene, camera, renderer) => {
+                    loop(duration, (scene, camera, renderer) => {
                         scene.background = sky(renderer, tex);
 
                         var orbit = new OrbitControls(
@@ -66,52 +66,44 @@
 
                         camera.position.z = 1600;
 
-                        /*
-                        TODO: 
-                        - I like how many TVs there are now but I wish they entered into view more gradually
-                        - solution: each TV has a unique delay before being added to the scene, BUT will wait to add itself when position is not in the viewport
-                            - specifically for jumbos & billboards, signposts are probably fine as-is
-                            - https://stackoverflow.com/questions/29758233/three-js-check-if-object-is-still-in-view-of-the-camera
-                                - will probably want to set up a mini test for this
-                        */
-
                         //TODO: consider adding some wrms (???)
 
-                        const tvPosts = [],
-                            posts = [];
-                        for (let i = 0; i < signPostCount; i++) {
-                            let tvPost = new TV(100);
-                            scene.add(tvPost.group);
+                        const checker = new ObjectInViewportChecker(camera);
 
-                            let post = new SignPost(tvPost.group, crv);
-                            post.offset = Math.random() * 50 + 100;
-                            post.position = i / signPostCount;
+                        const signposts = new SignPostPlacer(
+                            50,
+                            crv,
+                            () => new TV(100)
+                        );
+                        scene.add(signposts.group);
 
-                            tvPosts[i] = tvPost;
-                            posts[i] = post;
-                        }
+                        const billboards = new BillboardPlacer(
+                            25,
+                            crv,
+                            () =>
+                                new TV(
+                                    150,
+                                    duration *
+                                        (Math.random() / 2 + 1 / 4) *
+                                        1000,
+                                    checker
+                                )
+                        );
+                        scene.add(billboards.group);
 
-                        //TODO: try smaller, less billboards
-                        const tvBillboards = [],
-                            billboards = [];
-                        for (let i = 0; i < billboardCount; i++) {
-                            let tvBill = new TV(200);
-                            scene.add(tvBill.group);
-
-                            let bill = new Billboard(tvBill.group, crv, 0.1);
-                            bill.offset = Math.random() * 100 + 500;
-                            bill.position =
-                                (i / billboardCount + 1 / billboardCount / 2) %
-                                1;
-                            bill.rotation =
-                                Math.PI * Math.random() + Math.PI * (2 / 2);
-
-                            tvBillboards[i] = tvBill;
-                            billboards[i] = bill;
-                        }
-
-                        //TODO: try less jumbos but larger (back to 500)
-                        var jumbsphere = new JumboSphere(42 / 2, 400);
+                        var jumbsphere = new JumboSphere(
+                            42 * (1 / 2),
+                            () =>
+                                new TV(
+                                    500,
+                                    Math.random() > 0.5
+                                        ? duration *
+                                          (Math.random() / 2 + 1 / 4) *
+                                          1000
+                                        : duration * (1 / 8) * 1000,
+                                    checker
+                                )
+                        );
                         scene.add(jumbsphere.group);
 
                         /*
@@ -141,30 +133,8 @@
                             coaster.update(1 - t * 0.4);
                             //wrm.update(t * 2);
 
-                            for (let i = 0; i < signPostCount; i++) {
-                                const tvPost = tvPosts[i];
-                                const post = posts[i];
-                                const scaler = (post.offset - 100) / 50;
-                                const speed = scaler * 30 - 15;
-                                const phase = scaler * 2 * Math.PI;
-
-                                post.rotation = Math.PI * 2 * t * speed + phase;
-                                post.update();
-
-                                tvPost.update(elapsed);
-                            }
-
-                            for (let i = 0; i < billboardCount; i++) {
-                                const tv = tvBillboards[i];
-                                const bill = billboards[i];
-                                const scaler = (bill.offset - 500) / 100;
-                                const speed = (scaler * 10 - 5) / 4;
-                                const phase = scaler * 2 * Math.PI;
-
-                                bill.rotation = Math.PI * 2 * t * speed + phase;
-                                bill.update();
-                                tv.update(elapsed);
-                            }
+                            signposts.update(t, elapsed);
+                            billboards.update(t, elapsed);
 
                             jumbsphere.tvs.forEach(tv => tv.update(elapsed));
                         };

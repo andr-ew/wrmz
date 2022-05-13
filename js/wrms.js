@@ -639,13 +639,97 @@ export var TV = function (size, waitTime, objectInViewportChecker) {
         map: texture,
     });
     const plane = new THREE.Mesh(geometry, material);
-    this.group.add(plane);
+
+    if (waitTime) {
+        setTimeout(() => {
+            let id;
+            id = setInterval(() => {
+                let visible = objectInViewportChecker.check(this.group);
+
+                if (!visible) {
+                    setTimeout(() => {
+                        this.group.add(plane);
+                    }, 1000);
+
+                    clearInterval(id);
+                }
+            }, 100);
+        }, waitTime);
+    } else {
+        this.group.add(plane);
+    }
 
     this.update = elapsed => {
         if (this.frames) {
             const i = Math.floor(elapsed / fps) % this.frames.length;
             texture.image = this.frames[i];
             texture.needsUpdate = true;
+        }
+    };
+};
+
+export const SignPostPlacer = function (signPostCount, crv, fTV) {
+    this.group = new THREE.Group();
+
+    const tvPosts = [],
+        posts = [];
+    for (let i = 0; i < signPostCount; i++) {
+        let tvPost = fTV(i);
+        this.group.add(tvPost.group);
+
+        let post = new SignPost(tvPost.group, crv);
+        post.offset = Math.random() * 50 + 100;
+        post.position = (i / signPostCount) * 0.95 + 0.05;
+
+        tvPosts[i] = tvPost;
+        posts[i] = post;
+    }
+
+    this.update = function (t, elapsed) {
+        for (let i = 0; i < signPostCount; i++) {
+            const tvPost = tvPosts[i];
+            const post = posts[i];
+            const scaler = (post.offset - 100) / 50;
+            const speed = scaler * 30 - 15;
+            const phase = scaler * 2 * Math.PI;
+
+            post.rotation = Math.PI * 2 * t * speed + phase;
+            post.update();
+
+            tvPost.update(elapsed);
+        }
+    };
+};
+
+export const BillboardPlacer = function (billboardCount, crv, fTV) {
+    this.group = new THREE.Group();
+
+    const tvBillboards = [],
+        billboards = [];
+    for (let i = 0; i < billboardCount; i++) {
+        let tvBill = fTV(i);
+        this.group.add(tvBill.group);
+
+        let bill = new Billboard(tvBill.group, crv, 0.1);
+        bill.offset = Math.random() * 100 + 500;
+        bill.position = (i / billboardCount + 1 / billboardCount / 2) % 1;
+        bill.rotation = Math.PI * Math.random() + Math.PI * (2 / 2);
+
+        tvBillboards[i] = tvBill;
+        billboards[i] = bill;
+    }
+
+    this.update = function (t, elapsed) {
+        for (let i = 0; i < billboardCount; i++) {
+            const tv = tvBillboards[i];
+            const bill = billboards[i];
+            const scaler = (bill.offset - 500) / 100;
+            const speed = (scaler * 10 - 5) / 4;
+            const phase = scaler * 2 * Math.PI;
+
+            //bill.rotation = Math.PI * 2 * t * speed + phase;
+            bill.update();
+            tv.update(elapsed);
         }
     };
 };
@@ -676,7 +760,7 @@ const shuffle = array => {
     }
 };
 
-export var JumboSphere = function (count, size) {
+export var JumboSphere = function (count, fTV) {
     this.group = new THREE.Group();
     var ico = new THREE.IcosahedronGeometry(2000, 1);
     var vertices = getGeometryVerticies(ico);
@@ -685,7 +769,7 @@ export var JumboSphere = function (count, size) {
     this.tvs = [];
 
     for (let i = 0; i < count; i++) {
-        const tv = new TV(size);
+        const tv = fTV(i);
 
         tv.group.position.copy(vertices[i % vertices.length]);
         tv.group.lookAt(0, 0, 0);
