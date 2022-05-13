@@ -599,8 +599,30 @@ export var getTVFrames = (listPath, onload) => {
     });
 };
 
+export const ObjectInViewportChecker = function (camera) {
+    const frustum = new THREE.Frustum();
+
+    this.check = function (obj) {
+        camera.updateMatrix();
+        camera.updateMatrixWorld();
+
+        frustum.setFromProjectionMatrix(
+            new THREE.Matrix4().multiplyMatrices(
+                camera.projectionMatrix,
+                camera.matrixWorldInverse
+            )
+        );
+
+        if (obj) {
+            let pos = obj.position;
+
+            return frustum.containsPoint(pos);
+        }
+    };
+};
+
 //TODO: lookAt option (face n segments away from position segment)
-export var TV = function (size) {
+export var TV = function (size, waitTime, objectInViewportChecker) {
     const fps = 24;
 
     this.group = new THREE.Group();

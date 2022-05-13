@@ -39,7 +39,7 @@ renderer.setPixelRatio(window.devicePixelRatio);
 document.body.appendChild(renderer.domElement);
 
 //setting the background to blue, nice for chromakeys
-renderer.setClearColor(0x00ff00, 1);
+renderer.setClearColor(0x0000ff, 1);
 
 const stats = new Stats();
 document.body.appendChild(stats.dom);
