@@ -81,13 +81,17 @@ function loop(duration = 3, init = () => {}, options = {}) {
         }
         const elapsed = now - start;
 
-        //t = loop position in the range 0 - 1
-        const t = (elapsed % (duration * 1000)) / (duration * 1000);
+        if (elapsed > duration * 1000) {
+            start = undefined; //reset loop timing
+        } else {
+            //t = loop position in the range 0 - 1
+            const t = elapsed / (duration * 1000);
 
-        update(t, elapsed, firstFrame);
+            update(t, elapsed, firstFrame);
 
-        renderer.render(scene, camera);
-        if (capturer) capturer.capture(renderer.domElement);
+            renderer.render(scene, camera);
+            if (capturer) capturer.capture(renderer.domElement);
+        }
     };
     animate();
 

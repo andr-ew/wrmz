@@ -29,7 +29,8 @@
 
             window.THREE = THREE;
 
-            const duration = 60 * 4 + 13;
+            //const duration = 60 * 4 + 13;
+            const duration = 5;
 
             new THREE.TextureLoader().load(
                 //'img/IMG_0331.jpeg',
@@ -129,7 +130,7 @@
 
                         let coaster = new Coaster(camera, crv, 60, false);
 
-                        return (t, elapsed) => {
+                        return (t, elapsed, first) => {
                             coaster.update(1 - t * 0.4);
                             //wrm.update(t * 2);
 
@@ -137,6 +138,8 @@
                             billboards.update(t, elapsed);
 
                             jumbsphere.tvs.forEach(tv => tv.update(elapsed));
+
+                            if (t == 0) console.log('first');
                         };
                     });
                 }

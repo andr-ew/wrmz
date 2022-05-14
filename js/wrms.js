@@ -640,26 +640,31 @@ export var TV = function (size, waitTime, objectInViewportChecker) {
     });
     const plane = new THREE.Mesh(geometry, material);
 
-    if (waitTime) {
-        setTimeout(() => {
-            let id;
-            id = setInterval(() => {
-                let visible = objectInViewportChecker.check(this.group);
+    this.reset = () => {
+        if (plane.parent) plane.removeFromParent();
 
-                if (!visible) {
-                    setTimeout(() => {
-                        this.group.add(plane);
-                    }, 1000);
+        if (waitTime) {
+            setTimeout(() => {
+                let id;
+                id = setInterval(() => {
+                    let visible = objectInViewportChecker.check(this.group);
 
-                    clearInterval(id);
-                }
-            }, 100);
-        }, waitTime);
-    } else {
-        this.group.add(plane);
-    }
+                    if (!visible) {
+                        setTimeout(() => {
+                            this.group.add(plane);
+                        }, 1000);
+
+                        clearInterval(id);
+                    }
+                }, 100);
+            }, waitTime);
+        } else {
+            this.group.add(plane);
+        }
+    };
 
     this.update = elapsed => {
+        if (elapsed == 0) console.log('zero');
         if (this.frames) {
             const i = Math.floor(elapsed / fps) % this.frames.length;
             texture.image = this.frames[i];
