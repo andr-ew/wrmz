@@ -24,6 +24,7 @@
                 BillboardPlacer,
                 JumboSphere,
                 ObjectInViewportChecker,
+                wrap_minmax,
             } from './js/wrms.js';
             import { Curves } from 'https://unpkg.com/three@0.137.5/examples/jsm/curves/CurveExtras.js?module';
 
@@ -47,7 +48,7 @@
 
                         let crv = new THREE.TubeBufferGeometry(
                             new Curves.DecoratedTorusKnot5c(900),
-                            1600,
+                            2600,
                             1,
                             3,
                             true
@@ -133,10 +134,74 @@
                         //TODO: intro
 
                         let coaster = new Coaster(camera, crv, 60, false);
+                        coaster.offset = 60 * 3;
+                        coaster.rotation = (0 / 2) * Math.PI;
+
+                        const introDuration = 10;
+                        const rotationDuration = 70;
+                        const accelDuration = 30;
+
+                        const coasterData = {
+                            offset: coaster.offset,
+                            rotation: coaster.rotation,
+                            velocity: 0.000006,
+                            position: 1 + 0.155,
+                        };
+
+                        const tweenGroup = new TWEEN.Group();
+
+                        const rotationTween = new TWEEN.Tween(
+                            coasterData,
+                            tweenGroup
+                        )
+                            .to(
+                                {
+                                    rotation: -Math.PI,
+                                },
+                                rotationDuration * 1000
+                            )
+                            .easing(TWEEN.Easing.Quadratic.InOut)
+                            .delay(introDuration * 1000 * 1);
+
+                        const offsetTween = new TWEEN.Tween(
+                            coasterData,
+                            tweenGroup
+                        )
+                            .to(
+                                {
+                                    offset: 70,
+                                },
+                                rotationDuration * 1000
+                            )
+                            .easing(TWEEN.Easing.Quadratic.InOut)
+                            .delay(introDuration * 1000 * 0.5);
+
+                        const accelTween = new TWEEN.Tween(
+                            coasterData,
+                            tweenGroup
+                        )
+                            .to(
+                                {
+                                    velocity: 0.000016,
+                                },
+                                accelDuration * 1000
+                            )
+                            .easing(TWEEN.Easing.Linear.None)
+                            .delay(0);
 
                         return (t, elapsed, first) => {
-                            //coaster.rotation = Math.PI * 2 * t * 20;
-                            coaster.update(1 - t * 0.4);
+                            if (first) {
+                                rotationTween.start(0);
+                                offsetTween.start(0);
+                                accelTween.start(0);
+                            }
+                            tweenGroup.update(elapsed, false);
+
+                            coaster.update(wrap_minmax(coasterData.position));
+                            coasterData.position += coasterData.velocity;
+
+                            coaster.offset = coasterData.offset;
+                            coaster.rotation = coasterData.rotation;
 
                             /*
 

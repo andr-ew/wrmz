@@ -296,6 +296,8 @@ export var Coaster = function (camera, crv, offset = 60, lookAhead = false) {
 
         tubeGeometry.parameters.path.getTangentAt(t, direction);
 
+        direction.multiplyScalar(-1);
+
         normal.copy(binormal).cross(direction);
 
         // we move on a offset on its binormal
@@ -411,7 +413,7 @@ export var SignPost = function (obj, crv) {
     };
 };
 
-const wrap_minmax = (n, min = 0, max = 1) => {
+export const wrap_minmax = (n, min = 0, max = 1) => {
     const r = max - min;
     while (n < min) n += r;
     while (n > max) n -= r;
@@ -509,8 +511,8 @@ export var Seq = function (args) {
     for (let i = 0; i < args.length; i++) {
         tweens[i] = new TWEEN.Tween(state, grp)
             .to(args[i][1], time(args[i][0]))
-            .easing(TWEEN.Easing.Quadratic.InOut)
-            .onUpdate(on);
+            .easing(TWEEN.Easing.Quadratic.InOut);
+        //.onUpdate(on);
 
         let last = i == 0 ? args.length - 1 : i - 1;
 
