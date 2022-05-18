@@ -29,8 +29,8 @@
 
             window.THREE = THREE;
 
-            //const duration = 60 * 4 + 13;
-            const duration = 5;
+            const duration = 60 * 4 + 13;
+            //const duration = 5;
 
             new THREE.TextureLoader().load(
                 //'img/IMG_0331.jpeg',
@@ -71,6 +71,7 @@
 
                         const checker = new ObjectInViewportChecker(camera);
 
+                        /*
                         const signposts = new SignPostPlacer(
                             50,
                             crv,
@@ -106,6 +107,7 @@
                                 )
                         );
                         scene.add(jumbsphere.group);
+                        //*/
 
                         /*
                         getTVFrames('ls_vid.json', frames => {
@@ -128,18 +130,20 @@
                         });
                         //*/
 
+                        //TODO: intro
+
                         let coaster = new Coaster(camera, crv, 60, false);
 
                         return (t, elapsed, first) => {
+                            //coaster.rotation = Math.PI * 2 * t * 20;
                             coaster.update(1 - t * 0.4);
-                            //wrm.update(t * 2);
+
+                            /*
 
                             signposts.update(t, elapsed);
                             billboards.update(t, elapsed);
-
                             jumbsphere.tvs.forEach(tv => tv.update(elapsed));
-
-                            if (t == 0) console.log('first');
+                            //*/
                         };
                     });
                 }

@@ -256,6 +256,7 @@ export var Wrm = function (
     };
 };
 
+//TODO: rotation property
 export var Coaster = function (camera, crv, offset = 60, lookAhead = false) {
     var direction = new THREE.Vector3();
     var binormal = new THREE.Vector3();
@@ -263,9 +264,13 @@ export var Coaster = function (camera, crv, offset = 60, lookAhead = false) {
     var position = new THREE.Vector3();
     var lookAt = new THREE.Vector3();
 
+    var q = new THREE.Quaternion();
+    var point = new THREE.Vector3();
+
     this.offset = offset;
     this.scale = 1;
     this.lookAhead = lookAhead;
+    this.rotation = 0;
 
     this.update = function (t) {
         let tubeGeometry = crv;
@@ -313,6 +318,16 @@ export var Coaster = function (camera, crv, offset = 60, lookAhead = false) {
         if (!this.lookAhead) lookAt.copy(position).add(direction);
         splineCamera.matrix.lookAt(splineCamera.position, lookAt, normal);
         splineCamera.quaternion.setFromRotationMatrix(splineCamera.matrix);
+
+        //rotate object around spline based on this.rotation
+        tubeGeometry.parameters.path.getPointAt(t, point);
+        q.setFromAxisAngle(direction, this.rotation);
+
+        splineCamera.applyQuaternion(q);
+
+        splineCamera.position.sub(point);
+        splineCamera.position.applyQuaternion(q);
+        splineCamera.position.add(point);
     };
 };
 
@@ -664,7 +679,8 @@ export var TV = function (size, waitTime, objectInViewportChecker) {
     };
 
     this.update = elapsed => {
-        if (elapsed == 0) console.log('zero');
+        if (elapsed == 0) this.reset();
+
         if (this.frames) {
             const i = Math.floor(elapsed / fps) % this.frames.length;
             texture.image = this.frames[i];
