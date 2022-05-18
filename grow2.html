@@ -134,11 +134,11 @@
                         //TODO: intro
 
                         let coaster = new Coaster(camera, crv, 60, false);
-                        coaster.offset = 60 * 3;
-                        coaster.rotation = (0 / 2) * Math.PI;
+                        coaster.offset = 60 * 10;
+                        coaster.rotation = -(3 / 4) * Math.PI;
 
                         const introDuration = 10;
-                        const rotationDuration = 70;
+                        const rotationDuration = 100;
                         const accelDuration = 30;
 
                         const coasterData = {
@@ -171,7 +171,7 @@
                                 {
                                     offset: 70,
                                 },
-                                rotationDuration * 1000
+                                70 * 1000
                             )
                             .easing(TWEEN.Easing.Quadratic.InOut)
                             .delay(introDuration * 1000 * 0.5);
