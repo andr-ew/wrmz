@@ -171,12 +171,6 @@ export var Wrm = function (
     texture,
     onload = () => {}
 ) {
-    var direction = new THREE.Vector3();
-    var binormal = new THREE.Vector3();
-    var normal = new THREE.Vector3();
-    var position = new THREE.Vector3();
-    var lookAt = new THREE.Vector3();
-
     var segments = [];
     var groups = [];
     this.group = new THREE.Group();
@@ -208,6 +202,12 @@ export var Wrm = function (
     );
 
     this.update = function (T) {
+        var direction = new THREE.Vector3();
+        var binormal = new THREE.Vector3();
+        var normal = new THREE.Vector3();
+        var position = new THREE.Vector3();
+        var lookAt = new THREE.Vector3();
+
         for (let i in segments) {
             let seg = segments[i];
             let t = (T + i / nsegs) % 1;
