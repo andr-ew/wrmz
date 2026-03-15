@@ -1,7 +1,7 @@
 import * as THREE from 'https://unpkg.com/three@0.137.5?module';
 import Stats from 'https://unpkg.com/three@0.137.5/examples/jsm/libs/stats.module.js?module';
 
-let start, capturer, recording, width, height;
+let start, capturer, recording, width, height, forceSize;
 
 //some THREE.js "boilerplate"
 
@@ -12,7 +12,7 @@ const camera = new THREE.PerspectiveCamera(
     75,
     window.innerWidth / window.innerHeight,
     1,
-    3400
+    3400,
     //400
 );
 
@@ -46,7 +46,7 @@ document.body.appendChild(stats.dom);
 
 function resize() {
     let w, h;
-    if (recording) {
+    if (recording || forceSize) {
         w = width;
         h = height;
     } else {
@@ -64,8 +64,10 @@ window.addEventListener('resize', resize);
 function loop(duration = 3, init = () => {}, options = {}) {
     width = options.width || 1920;
     height = options.height || 1080;
+    forceSize = options.forceSize;
 
     let update = init(scene, camera, renderer) ?? (() => {});
+    resize();
 
     let animate = () => {
         requestAnimationFrame(animate);
